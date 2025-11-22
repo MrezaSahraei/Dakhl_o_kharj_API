@@ -44,17 +44,26 @@ class CategorySerializer(serializers.ModelSerializer):
                 is_active=vd['is_active'])
         except IntegrityError:
             raise serializers.ValidationError({'detail': 'خطای دیتابیس بخاطر رکورد تکراری یا نقض محدودیت '})
-
         return instance
     def update(self, instance, validate_data):
         validate_data.pop('user',None) #Preventing the client from changing the user
         for attr, value in validate_data.items():
             setattr(instance, attr, value)
         try: #مدیریت حطای دیتابیس هنگام اپدیت رکورد
-            instance.save
+            instance.save()
         except IntegrityError:
             raise serializers.ValidationError({'detail': 'خطای دیتابیس هنگام اپدیت دسته'})
+        return instance
 
+class TransactionSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = Transaction
+        fields = ['id', 'user', 'category', 'amount', 'description',
+                  'transaction_date', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
 
-
+    def validate_amount(self, value):
+        if value and value < 0:
+            raise serializers.ValidationError('مبلع پیش فرض نمیتواند منفی باشد!')
