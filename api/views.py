@@ -152,18 +152,30 @@ class UserBalanceAPIView(APIView):
         if confirm_saving:
 
             if final_balance > 0:
-                    saving_category = Category.objects.get(category_type='savings')
 
-                    Transaction.objects.create(
-                        user=user, amount=final_balance, category=saving_category,
-                        description="پس‌انداز خودکار مازاد تراز مالی (ایجاد شده با مجوز کاربر)",
-                        transaction_date=date.today()
-                    )
-                    return Response({
-                        'status': 'success',
-                        'saved_amount': final_balance,
-                        'message': f' ریال به عنوان پس انداز شما با موفقیت ثبت شد{final_balance} مبلغ '
-                    }, status=status.HTTP_201_CREATED)
+                '''create_category = Category.objects.get_or_create(
+                    user=user,
+                    category_type='savings',
+                    defaults={'name': 'پس‌انداز', 'color': 'سبز'})'''
+                saving_category, created = Category.objects.get_or_create(category_type='savings',
+                defaults={'name': 'savings'})
+
+                Transaction.objects.create(
+                    user=user, amount=final_balance, category=saving_category,
+                    description="پس‌انداز خودکار مازاد تراز مالی (ایجاد شده با مجوز کاربر)",
+                    transaction_date=date.today()
+                )
+
+                if created:
+                    message = f"دسته پس انداز ایجاد و مبلغ {final_balance} به عنوان پس‌انداز ثبت شد."
+                else:
+                    message = f"مبلغ {final_balance} به عنوان پس‌انداز ثبت شد."
+
+                return Response({
+                    'status': 'success',
+                    'saved_amount': final_balance,
+                    'message': message
+                }, status=status.HTTP_201_CREATED)
 
             elif final_balance == 0:
                 return Response({
