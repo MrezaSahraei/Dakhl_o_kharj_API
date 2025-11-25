@@ -1,7 +1,11 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from accounts.models import AppUser
+from django.conf import settings
 # Create your models here.
+
 class TimeStamp(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -12,10 +16,8 @@ class TimeStamp(models.Model):
 
 class Category(TimeStamp):
     TYPE_CHOICES = (
-        ('income_from_main_job', 'درامد از شغل اصلی'),
         ('income', 'درآمد'),
-        ('important_expense', 'هزینه ضروری'),
-        ('Additional costs', 'هزینه های جانبی'),
+        ('expense', 'هزینه ضروری'),
         ('savings', 'پس‌انداز/سرمایه‌گذاری'),
     )
     COLORS = (
@@ -26,7 +28,7 @@ class Category(TimeStamp):
         ('بنفش', '#8E7DBE'),
         ('خاکستری', '#AAB8C2')
     )
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='categories')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='categories')
     name = models.CharField(max_length=100)
     category_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='expense')
     color = models.CharField(max_length=100, choices=COLORS, default='Gray')
@@ -41,7 +43,7 @@ class Category(TimeStamp):
         return f'{self.user} {self.category_type}: {self.name}'
 
 class Transaction(TimeStamp):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='transactions')
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='transactions')
     amount = models.PositiveIntegerField(default=0, help_text='واحد پیش‌فرض (ریال)')
     description = models.TextField(blank=True, null=True)
@@ -54,7 +56,7 @@ class Transaction(TimeStamp):
         return f'{self.category.name}: {self.amount}'
 
 class Budgeting(TimeStamp):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='category_budget')
     minimum_target_amount = models.PositiveIntegerField(default=0, help_text='واحد پیش‌فرض (ریال)')
     maximum_target_amount = models.PositiveIntegerField(default=0, help_text='واحد پیش‌فرض (ریال)')
