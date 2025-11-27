@@ -1,10 +1,7 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-
+from django.conf import settings
 # Create your models here.
 class ShopUserManager(BaseUserManager):
     def create_user(self, phone, password=None, **extra_fields):
@@ -19,18 +16,18 @@ class ShopUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
-        if extra_fields.get('is_staff'):
+        if extra_fields.get('is_staff') is not True:
             raise ValueError('is_staff must be True')
 
-        if extra_fields.get('is_superuser'):
+        if extra_fields.get('is_superuser') is not True:
             raise ValueError('is_superuser must be True')
 
         return self.create_user(phone, password, **extra_fields)
 
 class AppUser(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=11, unique=True)
-    first_name = models.CharField(max_length=20)
-    last_name = models.CharField(max_length=20)
+    first_name = models.CharField(max_length=100, null=True, blank=True)
+    last_name = models.CharField(max_length=100, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
@@ -42,3 +39,27 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.phone
+
+'''class TimeStamp(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+        ordering = ['-created_at']'''
+
+
+class OTPCode(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expire_at = models.DateTimeField()
+
+    def code_valid(self):
+        return timezone.now() < self.expire_at
+
+    def __str__(self):
+        return f'{self.user.phone}: {self.code}'
+
+
+
