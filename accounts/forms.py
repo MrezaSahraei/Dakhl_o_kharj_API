@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import AppUser
 
-class ShopUserCreationForm(UserCreationForm):
+class AppUserCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = AppUser
         fields = ('phone', 'first_name', 'last_name', 'is_active', 'is_staff', 'is_superuser')
@@ -25,10 +25,10 @@ class ShopUserCreationForm(UserCreationForm):
         return phone
 
 
-class ShopUserChangeForm(UserChangeForm):
+class AppUserChangeForm(UserChangeForm):
     class Meta(UserChangeForm.Meta):
         model = AppUser
-        fields = ('phone', 'first_name', 'last_name', 'address', 'is_active', 'is_staff', 'is_superuser')
+        fields = ('phone', 'first_name', 'last_name', 'is_active', 'is_staff', 'is_superuser')
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
