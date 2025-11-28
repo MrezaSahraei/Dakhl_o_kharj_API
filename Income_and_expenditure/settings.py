@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api.apps.ApiConfig',
-    'accounts.apps.AccountsConfig'
+    'accounts.apps.AccountsConfig',
     'rest_framework',
     'rest_framework_simplejwt',
 
@@ -135,9 +135,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        #'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
         #'rest_framework.authentication.BasicAuthentication',
-        #'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
@@ -151,9 +151,19 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    # مدت زمان اعتبار Refresh Token (طولانی‌تر برای تمدید)
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
 
-    'TOKEN_OBTAIN_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenObtainPairSerializer',
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
+
+    "SIGNING_KEY": SECRET_KEY,
+    "ALGORITHM": "HS256",
+
+    "AUTH_HEADER_TYPES": ("Bearer",),
+
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "BLACKLIST_USE_DEFAULT_MODEL": True,
 }
