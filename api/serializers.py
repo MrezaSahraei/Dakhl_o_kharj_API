@@ -87,6 +87,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     def validate_amount(self, value):
         if value and value < 0:
             raise serializers.ValidationError('مبلع پیش فرض نمیتواند منفی باشد!')
+        return value
 
     def validate_category(self, value):
         request = self.context.get('request')
@@ -97,6 +98,7 @@ class TransactionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('دسته ای انتخاب نشده است!')
         if not value.is_active:
             raise serializers.ValidationError('نمیتوانید تراکنشی داشته باشید زیرا این دسته غیرفغال است')
+        return value
 
     def create(self,validated_data):
         request = self.context.get('request') #getting request
@@ -131,12 +133,15 @@ class TransactionSerializer(serializers.ModelSerializer):
         gregorian_date = jdate_object.togregorian()
         validated_data['date'] = gregorian_date
 
+
         for attr , value in validated_data.items():
             setattr(instance, attr, value)
         try:
             instance.save()
+
         except IntegrityError:
             raise serializers.ValidationError({'detail': 'خطای دیتابیس هنگام اپدیت تراکنش'})
+        return instance
 
     def get_shamsi_date(self, obj):
         jdate_object = jdatetime.date.fromgregorian(date=obj.date)
@@ -147,13 +152,24 @@ class TransactionSerializer(serializers.ModelSerializer):
 
 class BudgetingSerializer(serializers.ModelSerializer):
 
+    shamsi_year_start = serializers.IntegerField(min_value=1403, max_value=1500, write_only=True, required=True)
+    shamsi_month_start = serializers.IntegerField(min_value=1, max_value=12, write_only=True, required=True)
+    shamsi_day_start = serializers.IntegerField(min_value=1, max_value=31, write_only=True, required=True)
 
+    shamsi_year_end = serializers.IntegerField(min_value=1403, max_value=1500, write_only=True, required=True)
+    shamsi_month_end = serializers.IntegerField(min_value=1, max_value=12, write_only=True, required=True)
+    shamsi_day_end = serializers.IntegerField(min_value=1, max_value=31, write_only=True, required=True)
+
+    shamsi_start = serializers.SerializerMethodField()
+    shamsi_end = serializers.SerializerMethodField()
 
     class Meta:
         model = Budgeting
         fields = [
             'id','category', 'minimum_target_amount', 'maximum_target_amount',
-            'start_date', 'end_date' , 'created_at', 'updated_at'
+        'start_date','shamsi_year_start', 'shamsi_month_start' ,'shamsi_day_start',
+            'end_date','shamsi_year_end','shamsi_month_end','shamsi_day_end','shamsi_start','shamsi_end',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -180,8 +196,25 @@ class BudgetingSerializer(serializers.ModelSerializer):
         #getting fields from data
         min_amt = data.get('minimum_target_amount')
         max_amt = data.get('maximum_target_amount')
-        start = data.get('start_date')
-        end = data.get('end_date')
+
+        start_year = data.get('shamsi_year_start')
+        start_month = data.get('shamsi_month_start')
+        start_day = data.get('shamsi_day_start')
+
+        end_year = data.get('shamsi_year_end')
+        end_month = data.get('shamsi_month_end')
+        end_day = data.get('shamsi_day_end')
+
+        try:
+            jdate_start = jdatetime.date(start_year, start_month, start_day)
+            jdate_end = jdatetime.date(end_year, end_month, end_day)
+            data['start_date']= jdate_start.togregorian()
+            data['end_date'] = jdate_end.togregorian()
+        except ValueError:
+            raise serializers.ValidationError({'detail': 'تاریخ وارد شده معتبر نیست'})
+
+        start = data['start_date']
+        end = data['end_date']
 
         if min_amt and max_amt and min_amt > max_amt:
             raise serializers.ValidationError('حداکثر بودجه تعیین شده نمیتواند کوچکتر از حداقل بودجه تعیین شده باشد ')
@@ -204,6 +237,7 @@ class BudgetingSerializer(serializers.ModelSerializer):
         request =self.context.get('request')
         user = getattr(request, 'user', None)
         vd = validated_data
+
         try: # مدیریت خطای دیتابیس هنگام ساخت رکورد جدید
             instance = Budgeting.objects.create(user=user,
                 category=vd['category'],
@@ -224,6 +258,10 @@ class BudgetingSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'detail': 'خطای دیتابیس هنگام اپدیت بودجه '})
         return instance
 
+    def get_shamsi_start(self, obj):
+        jdate_object = jdatetime.date.fromgregorian(date=obj.start_date)
+        return jdate_object.strftime("%Y/%m/%d")
 
-
-
+    def get_shamsi_end(self, obj):
+        jdate_object = jdatetime.date.fromgregorian(date=obj.end_date)
+        return jdate_object.strftime("%Y/%m/%d")
