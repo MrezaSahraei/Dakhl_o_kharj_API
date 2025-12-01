@@ -8,7 +8,8 @@ from django.db import IntegrityError
 from .serializers import *
 from .models import *
 from django.db.models import Sum, DecimalField
-from datetime import date
+from datetime import date , datetime
+import jdatetime
 # Create your views here.
 
 '''class CategoryListCreateAPIView(APIView):
@@ -172,7 +173,7 @@ class UserBalanceAPIView(APIView):
                 Transaction.objects.create(
                     user=user, amount=final_balance, category=saving_category,
                     description="پس‌انداز خودکار مازاد تراز مالی (ایجاد شده با مجوز کاربر)",
-                    transaction_date=date.today()
+                    date=date.today()
                 )
 
                 if created:
@@ -204,3 +205,73 @@ class UserBalanceAPIView(APIView):
                 "status": "error",
                 "message": "برای ذخیره مازاد باید مجوز پس انداز مازاد تراز مالی را ارسال کنید."
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class MonthlySummeryAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        user = request.user
+
+        shamsi_year = request.query_params.get('year')
+        shamsi_month = request.query_params.get('month')
+
+        if not shamsi_year or not shamsi_month:
+            return Response(
+                {'detail': 'لطفا سال و ماه مورد نظر را مشخص کنید'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            shamsi_year = int(shamsi_year)
+            shamsi_month = int(shamsi_month)
+            start_j_date = jdatetime.date(shamsi_year, shamsi_month, 1)
+            start_gregorian_date = start_j_date.togregorian()
+            if shamsi_month <=6:
+                end_day = 31
+            elif shamsi_month <= 11:
+                end_day = 30
+            elif shamsi_month == 12:
+                end_day = 29
+
+            end_j_date = jdatetime.date(shamsi_year, shamsi_month, end_day)
+            end_gregorian_date = end_j_date.togregorian()
+
+        except ValueError:
+            return Response(
+                {"detail": "تاریخ وارد شده معتبر نیست."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        income_transactions = (Transaction.objects.select_related('category', 'user').
+            filter(user=user, category__category_type='income', date__range=[start_gregorian_date, end_gregorian_date]))
+
+        expense_transactions = (Transaction.objects.select_related('category', 'user').
+                               filter(user=user, category__category_type='expense',
+                                      date__range=[start_gregorian_date, end_gregorian_date]))
+
+        monthly_total_income = income_transactions.aggregate(total=Sum('amount'))['total'] or 0
+
+        monthly_total_expense = expense_transactions.aggregate(total=Sum('amount'))['total'] or 0
+
+        monthly_average_income = monthly_total_income / end_day
+        monthly_average_expense = monthly_total_expense / end_day
+
+        if monthly_total_expense == 0 and monthly_total_income == 0:
+            message = 'شما در این ماه تراکنشی نداشته اید'
+        else:
+            message = ' مجموع تراکنش های شما در این ماه'
+        monthly_net_balance = monthly_total_income - monthly_total_expense
+
+        return Response({
+            'shamsi_year': shamsi_year,
+            'shamsi_month' : shamsi_month,
+            'start_j_date' : start_j_date,
+            'end_j_date' : end_j_date,
+            'message': message,
+            'total_income_monthly' : monthly_total_income,
+            'total_expense_monthly': monthly_total_expense,
+            'monthly_average_income': monthly_average_income,
+            'monthly_average_expense': monthly_average_expense,
+            'monthly_net_balance': abs(monthly_net_balance)
+        })
