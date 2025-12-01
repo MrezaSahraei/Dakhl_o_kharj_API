@@ -290,3 +290,110 @@ class MonthlySummeryAPIView(APIView):
             'monthly_net_balance': monthly_net_balance
         },status=status.HTTP_200_OK)
 
+class YearlySummaryAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        shamsi_year = 1404#request.query_params.get('year')
+
+        if not shamsi_year:
+            return Response(
+                {'detail': 'لطفا عدد سال مورد نظر خود را مشخص کنید'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not 1300 <shamsi_year <1500 :
+            return Response(
+                {'detail': 'لطفا سال معتبر وارد کنید'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        month_num = {
+            1:'فروردین', 2: 'اردیبیهشت', 3: 'خرداد', 4: 'تیر', 5: 'مرداد', 6: 'شهریور',
+            7: 'مهر', 8: 'ابان', 9: 'اذر', 10: 'دی', 11: 'بهمن', 12: 'اسفند'
+        }
+
+        all_months_summary = []
+
+        for month in range(1,13):
+            if month <= 6:
+                end_day = 31
+            elif month <= 11:
+                end_day = 30
+            else:
+                if jdatetime.date(shamsi_year,1 ,1).isleap():
+                    end_day = 30
+                else:
+                    end_day = 29
+            start_j_date = jdatetime.date(shamsi_year, month, 1)
+            end_j_date = jdatetime.date(shamsi_year, month, end_day)
+            start_gregorian_date= start_j_date.togregorian()
+            end_gregorian_date = end_j_date.togregorian()
+
+            income_transactions = (Transaction.objects.select_related('category', 'user').
+                                       filter(user=user, category__category_type='income',
+                                              date__range=[start_gregorian_date, end_gregorian_date]))
+            expense_transactions = (Transaction.objects.select_related('category', 'user').
+                                    filter(user=user, category__category_type='expense',
+                                           date__range=[start_gregorian_date, end_gregorian_date]))
+
+            all_months_incomes = income_transactions.aggregate(total=Sum('amount'))['total'] or 0
+
+            all_months_expenses = expense_transactions.aggregate(total=Sum('amount'))['total'] or 0
+
+            all_months_summary.append({
+                'month_num': month,
+                'month_name': month_num[month],
+                'all_months_incomes': all_months_incomes,
+                'all_months_expenses': all_months_expenses,
+            })
+
+        try:
+            shamsi_year = int(shamsi_year)
+            start_j_date = jdatetime.date(shamsi_year, 1, 1)
+
+            if jdatetime.date(shamsi_year, 1, 1).isleap():
+                end_day = 30
+            else:
+                end_day = 29
+
+            end_j_date = jdatetime.date(shamsi_year, 12, end_day)
+
+            end_gregorian_date = end_j_date.togregorian()
+            start_gregorian_date = start_j_date.togregorian()
+
+        except ValueError:
+            return Response(
+                {"detail": "تاریخ وارد شده معتبر نیست."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        income_transactions = (Transaction.objects.select_related('category', 'user').
+            filter(user=user, category__category_type='income', date__range=[start_gregorian_date, end_gregorian_date]))
+
+        expense_transactions = (Transaction.objects.select_related('category', 'user').
+                               filter(user=user, category__category_type='expense',
+                                      date__range=[start_gregorian_date, end_gregorian_date]))
+
+        yearly_total_income = income_transactions.aggregate(total=Sum('amount'))['total'] or 0
+
+        yearly_total_expense = expense_transactions.aggregate(total=Sum('amount'))['total'] or 0
+
+        if yearly_total_expense == 0 and yearly_total_income == 0:
+            message = f'شما در سال{shamsi_year} تراکنشی نداشته اید'
+        else:
+            message = f'{shamsi_year} مجموع تراکنش های شما در سال '
+
+        yearly_net_balance = yearly_total_income - yearly_total_expense
+
+        return Response({
+            'shamsi_year': shamsi_year,
+            'message': message,
+            'total_income_yearly' : yearly_total_income,
+            'total_expense_yearly': yearly_total_expense,
+            'yearly_net_balance': yearly_net_balance,
+            'all_months_summary': all_months_summary
+
+
+        },status=status.HTTP_200_OK)
