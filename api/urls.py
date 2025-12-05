@@ -18,7 +18,7 @@ urlpatterns = [
 
     path('user-balance/', views.UserBalanceAPIView.as_view(), name='user_balance'),
 
-    path('user-balance/monthly', views.MonthlySummeryAPIView.as_view(), name='monthly_balance'),
+    path('user-balance/monthly', views.MonthlySummaryAPIView.as_view(), name='monthly_balance'),
 
     path('user-balance/yearly', views.YearlySummaryAPIView.as_view(), name='yearly_balance')
 ]
