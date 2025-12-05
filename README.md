@@ -83,21 +83,21 @@ Timezone-aware operations for Iran
 📁 Project Structure
 text
 Dakhl_o_kharj_API/
-├── accounts/                    # Authentication app
-│   ├── models.py               # Custom User model
-│   ├── serializers.py          # Auth serializers
-│   ├── views.py#               # Auth views (OTP, JWT)
-│    ├── utils.py                # Generate_otp
-│   ├── urls.py                 # Endpoint
+├── accounts/                     Authentication app
+│   ├── models.py                Custom User model
+│   ├── serializers.py          Auth serializers
+│   ├── views.py#                Auth views (OTP, JWT)
+│    ├── utils.py                 Generate_otp
+│   ├── urls.py                  Endpoint
 │   └── ...
-├── api/                    # Core finance app
-│   ├── models.py               # Category, Transaction, Budgeting
-│   ├── serializers.py          # Financial serializers
-│   ├── views.py                # API endpoints and persian jdate handling
-│   ├── tasks.py                # Celery tasks
-│    ├── urls.py                 # Endpoints
+├── api/                     Core finance app
+│   ├── models.py                Category, Transaction, Budgeting
+│   ├── serializers.py           Financial serializers
+│   ├── views.py                 API endpoints and persian jdate handling
+│   ├── tasks.py                 Celery tasks
+│    ├── urls.py                  Endpoints
 │   └── ...
-├── root/                      # Project
+├── root/                       Project
 │   ├── settings.py           
 │   ├── celery.py       
 │   └── urls.py           
@@ -138,22 +138,21 @@ celery -A root beat --loglevel=info
 ---
 🌟 Unique Features
 1. Persian Financial System
-Full Shamsi Date Support - All dates in Persian calendar
-Rial Currency - Native Iranian currency handling
-Persian Month Names - درآمد فروردین، هزینه اردیبهشت, etc.
+- Full Shamsi Date Support - All dates in Persian calendar
+- Rial Currency - Native Iranian currency handling
+- Persian Month Names - درآمد فروردین، هزینه اردیبهشت, etc.
 
 2. Automated Financial Management
-python
-# Automatic savings from positive balance
+- Automatic savings from positive balance
+```python
 if user_balance > 0:
     auto_save_to_savings(user, user_balance)
-    
+```
 3. Advanced Reporting
-Monthly income/expense comparison
-Year-over-year financial growth
+- Monthly income/expense comparison
+- Year-over-year financial growth
 ---
 🚧 Future Improvements  
-
 - Add notifications  
 - Add advanced reporting  
 - Fetching with a React-based frontend 
